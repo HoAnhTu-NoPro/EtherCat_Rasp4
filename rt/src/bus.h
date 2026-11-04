@@ -1,9 +1,12 @@
 #ifndef BUS_H
 #define BUS_H
 
+#include <stdbool.h>
 #include <stdint.h>
 
 #include "soem/soem.h"
+
+#include "config.h"
 
 /* PDO mặc định của DM3E-556 (0x1600 / 0x1A00), đọc thực tế bằng ecat-scan. */
 typedef struct __attribute__((packed))
@@ -34,9 +37,13 @@ typedef struct
    dm3e_tx_t *in;
 } bus_t;
 
-/* Quét bus, kiểm tra slave là DM3E, đặt CSP qua SDO, map PDO, cấu hình DC Sync0.
- * Kết thúc ở SAFE-OP-ready (PRE-OP + map xong). Trả về 0 nếu thành công. */
-int bus_open(bus_t *b, const char *ifname, int slave, uint32_t cycle_ns);
+/* Quét bus, kiểm tra slave là DM3E-556, cấu hình driver (CSP, dòng đỉnh, Sync0),
+ * map PDO, lên SAFE-OP. Trả về 0 nếu thành công. */
+int bus_open(bus_t *b, const config_t *cfg);
+
+/* Thử đưa slave về OP sau lỗi (ack, reconfig, recover). Gọi từ thread giám sát.
+ * Trả về true nếu slave đang ở OP. */
+bool bus_check_recover(bus_t *b);
 
 /* Yêu cầu chuyển tất cả slave sang trạng thái (không chờ). */
 void bus_request_state(bus_t *b, uint16_t state);

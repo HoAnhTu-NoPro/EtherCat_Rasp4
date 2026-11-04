@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <inttypes.h>
+#include <unistd.h>
 
 #include "soem/soem.h"
 
@@ -115,6 +116,13 @@ static void print_dm3e(uint16 slave)
 int main(int argc, char **argv)
 {
    const char *ifname = argc > 1 ? argv[1] : "eth0";
+
+   /* Quét bus sẽ đưa slave về INIT: không được chạy khi ecat-rt đang điều khiển. */
+   if (access("/run/ecat-rt/cmd.sock", F_OK) == 0)
+   {
+      fprintf(stderr, "ecat-rt đang chạy (/run/ecat-rt/cmd.sock tồn tại). Dừng nó trước khi quét bus (nếu ecat-rt đã chết: sudo rm /run/ecat-rt/cmd.sock).\n");
+      return 3;
+   }
 
    if (!ecx_init(&ctx, ifname))
    {

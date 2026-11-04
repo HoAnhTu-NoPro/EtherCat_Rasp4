@@ -26,6 +26,17 @@ có web UI cổng 8080. Xem README.md cho build/chạy.
 - Heartbeat 200 ms kiểm tra **trong tiến trình RT**. Giới hạn v/a từ
   `config/axis.ini` cũng áp trong RT.
 - Khởi động hoặc mất bus: trục luôn disable, không tự enable.
+- STOP chốt: JOG bị bỏ qua đến khi client ngừng gửi jog > heartbeat (nhả nút),
+  để STOP không bị lệnh jog đang giữ ghi đè. Disable khi đang chạy: giảm tốc
+  rồi mới cắt điện.
+- Cấu hình driver (6060=8, 0x2000 dòng đỉnh, kiểm tra 0x2001, dcsync0) nằm trong
+  hook `PO2SOconfig` của SOEM, nên chạy lại khi slave được reconfig sau mất nguồn.
+  Dòng đỉnh chỉ ghi RAM, không lưu EEPROM (EEPROM hiện là 4000 mA).
+- `ecat-rt` thread RT chỉ dùng syscall non-blocking (recv MSG_DONTWAIT); thread
+  chính (200 ms) làm ecx_readstate/khôi phục slave và ghi khối bus vào shm.
+- Không chạy `ecat-scan` hay tool SOEM khác khi `ecat-rt` đang chạy: chúng
+  đưa slave về INIT (đã xảy ra một lần khi test, trục vào Fault 0xA001,
+  không tự enable lại, đúng thiết kế).
 - Kernel: hiện là PREEMPT (không RT). Kế hoạch: đo jitter trước với SCHED_FIFO,
   mlockall, isolcpus=3, IRQ eth0 → CPU3, Docker cpuset 0-2; chỉ đổi PREEMPT_RT
   nếu jitter xấu nhất > ~200 µs. Chưa sửa /boot.

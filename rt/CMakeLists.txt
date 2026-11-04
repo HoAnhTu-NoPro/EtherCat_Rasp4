@@ -13,5 +13,12 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../third_party/SOEM soem EXCLUDE_FR
 add_executable(ecat-scan tools/ecat-scan.c)
 target_link_libraries(ecat-scan soem)
 
-add_executable(ecat-rt src/main.c src/bus.c src/config.c)
-target_link_libraries(ecat-rt soem pthread)
+set(SHARED_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../shared)
+
+add_executable(ecat-rt src/main.c src/bus.c src/config.c src/cia402.c src/profile.c src/ipc.c)
+target_include_directories(ecat-rt PRIVATE ${SHARED_DIR})
+target_link_libraries(ecat-rt soem pthread m rt)
+
+add_executable(ecat-ctl tools/ecat-ctl.c)
+target_include_directories(ecat-ctl PRIVATE ${SHARED_DIR})
+target_link_libraries(ecat-ctl rt)

@@ -10,12 +10,15 @@ typedef struct
 
    int slave;
    int32_t pulses_per_rev;
+   uint32_t peak_current_ma;
 
    double max_jog_rpm;
    double accel_rpm_s;
    double stop_decel_rpm_s;
 
    uint32_t heartbeat_timeout_ms;
+
+   char ipc_group[32];
 } config_t;
 
 /* Đọc file INI. Khóa thiếu giữ giá trị mặc định an toàn. Trả về 0 nếu thành công. */

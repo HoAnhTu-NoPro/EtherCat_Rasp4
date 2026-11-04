@@ -90,34 +90,6 @@
       <dt>Heartbeat</dt><dd id="lim-hb">—</dd>
     </dl>
   </section>
-  <section class="pdo" id="sec-pdo">
-    <h2>Dữ liệu trao đổi mỗi chu kỳ (PDO)</h2>
-    <p class="hint">Ảnh chụp 20 lần/giây của vùng dữ liệu trong frame EtherCAT.
-      Mỗi 1 ms Pi ghi 8 byte vào frame; driver đọc chúng và chèn 19 byte trạng thái vào cùng frame trên đường về.
-      Số nguyên little-endian (byte thấp trước).</p>
-    <dl class="kv">
-      <dt>Chu kỳ số</dt><dd id="pdo-cycle">—</dd>
-      <dt>607A tăng mỗi chu kỳ</dt><dd id="pdo-delta">—</dd>
-    </dl>
-    <div class="pdo-grid">
-      <div>
-        <h3>Pi → driver · RxPDO 0x1600 · 8 byte</h3>
-        <div class="hexline mono" id="pdo-out-hex">—</div>
-        <div class="table-wrap"><table>
-          <thead><tr><th>Byte</th><th>Đối tượng</th><th>Hex</th><th>Giá trị</th></tr></thead>
-          <tbody id="pdo-out"></tbody>
-        </table></div>
-      </div>
-      <div>
-        <h3>Driver → Pi · TxPDO 0x1A00 · 19 byte</h3>
-        <div class="hexline mono" id="pdo-in-hex">—</div>
-        <div class="table-wrap"><table>
-          <thead><tr><th>Byte</th><th>Đối tượng</th><th>Hex</th><th>Giá trị</th></tr></thead>
-          <tbody id="pdo-in"></tbody>
-        </table></div>
-      </div>
-    </div>
-  </section>
 </main>
 
 <div id="stop"><button id="stop-btn">STOP</button></div>

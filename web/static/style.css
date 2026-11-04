@@ -118,12 +118,7 @@ section h2 {
   letter-spacing: .04em;
   color: var(--muted);
 }
-section.control, section.pdo { grid-column: 1 / -1; }
-section h3 { font-size: 13px; font-weight: 600; margin: 14px 0 6px; }
-.hint { color: var(--muted); font-size: 13px; margin: 0 0 10px; }
-.pdo-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 0 20px; }
-.hexline { padding: 8px 10px; border-radius: 6px; background: var(--bg); margin-bottom: 6px; overflow-wrap: anywhere; letter-spacing: .03em; }
-.changed { background: var(--warn-bg); transition: background .2s; }
+section.control { grid-column: 1 / -1; }
 .stale { opacity: .45; }
 
 dl.kv {

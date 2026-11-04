@@ -87,35 +87,6 @@ ERRORS_603F = {
     0xFF02: "Lỗi đồng bộ",
 }
 
-# PDO mặc định của DM3E-556: (offset, kiểu struct, chỉ số, tên)
-PDO_OUT = [
-    (0, "H", "6040", "Controlword"),
-    (2, "i", "607A", "Target position"),
-    (6, "H", "60B8", "Touch probe function"),
-]
-PDO_IN = [
-    (0, "H", "603F", "Error code"),
-    (2, "H", "6041", "Statusword"),
-    (4, "b", "6061", "Mode display"),
-    (5, "i", "6064", "Actual position"),
-    (9, "H", "60B9", "Touch probe status"),
-    (11, "i", "60BA", "Probe 1 positive"),
-    (15, "I", "60FD", "Digital inputs"),
-]
-
-
-def decode_pdo(raw: bytes, layout) -> list[dict]:
-    import struct
-    out = []
-    for off, fmt, idx, name in layout:
-        size = struct.calcsize("<" + fmt)
-        chunk = raw[off:off + size]
-        (val,) = struct.unpack("<" + fmt, chunk)
-        out.append({"off": off, "size": size, "index": idx, "name": name,
-                    "hex": chunk.hex(" ").upper(), "value": val})
-    return out
-
-
 ESC_STATES = {1: "INIT", 2: "PREOP", 3: "BOOT", 4: "SAFEOP", 8: "OP"}
 
 

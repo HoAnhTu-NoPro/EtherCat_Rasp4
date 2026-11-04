@@ -115,7 +115,6 @@ static void *rt_thread(void *arg)
    bool bus_ok = false;
    int wkc_bad = 0, wkc_good = 0;
    int32_t prev_pos = 0;
-   int32_t prev_target = 0, target_delta = 0;
    double vel_filt = 0;
    bool have_prev = false;
 
@@ -273,8 +272,6 @@ static void *rt_thread(void *arg)
                            : CW_DISABLE_VOLTAGE;
       bus.out->controlword = cw;
       bus.out->target_position = enabled ? profile_position(&prof) : bus.in->actual_position;
-      target_delta = (int32_t)((uint32_t)bus.out->target_position - (uint32_t)prev_target);
-      prev_target = bus.out->target_position;
 
       ecx_send_processdata(&bus.ctx);
 
@@ -319,9 +316,6 @@ static void *rt_thread(void *arg)
                     (hb_expired ? FL_HB_EXPIRED : 0) | (drv.enable_timeout ? FL_ENABLE_TIMEOUT : 0) |
                     (hard_stop || (enabled && !drv.enable_req) ? FL_STOPPING : 0) |
                     (stop_latched ? FL_STOP_LATCHED : 0);
-         st.target_delta = target_delta;
-         memcpy(st.pdo_out, bus.out, sizeof(st.pdo_out));
-         memcpy(st.pdo_in, bus.in, sizeof(st.pdo_in));
          ipc_publish(&ipc.shm->rt, &st, sizeof(st));
       }
    }

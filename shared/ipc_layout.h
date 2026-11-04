@@ -15,7 +15,7 @@
 
 #include <stdint.h>
 
-#define IPC_VERSION 2
+#define IPC_VERSION 1
 #define IPC_MAGIC 0x45434154u /* "ECAT" */
 #define IPC_CMD_SOCKET "/run/ecat-rt/cmd.sock"
 #define IPC_SHM_NAME "/ecat-rt-status"
@@ -98,12 +98,6 @@ typedef struct __attribute__((packed))
    /* Giới hạn từ file cấu hình, để giao diện hiển thị */
    float max_jog_rpm, accel_rpm_s, stop_decel_rpm_s;
    uint32_t heartbeat_timeout_ms;
-
-   /* Ảnh dữ liệu quá trình của chu kỳ gần nhất, đúng byte trên dây */
-   int32_t target_delta; /* 607A chu kỳ này - chu kỳ trước (xung/chu kỳ) */
-   uint8_t pdo_out[8];   /* RxPDO 0x1600: Pi -> driver */
-   uint8_t pdo_in[19];   /* TxPDO 0x1A00: driver -> Pi */
-   uint8_t reserved[5];  /* đệm: khối tiếp theo phải căn lề 8 byte */
 } ipc_rt_block_t;
 
 typedef struct __attribute__((packed))
@@ -133,10 +127,5 @@ typedef struct __attribute__((packed))
    ipc_rt_block_t rt;
    ipc_bus_block_t bus;
 } ipc_shm_t;
-
-/* seq dùng lệnh atomic: trên ARM64 địa chỉ lệch căn lề gây SIGBUS. */
-_Static_assert(sizeof(ipc_rt_block_t) % 8 == 0, "ipc_rt_block_t phải là bội số của 8 byte");
-_Static_assert(sizeof(ipc_bus_block_t) % 8 == 0, "ipc_bus_block_t phải là bội số của 8 byte");
-_Static_assert(sizeof(ipc_slave_t) % 4 == 0, "ipc_slave_t phải là bội số của 4 byte");
 
 #endif

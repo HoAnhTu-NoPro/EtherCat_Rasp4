@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Đăng nhập · EtherCAT Pi</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div class="login">
+  <section>
+    <h1>EtherCAT Pi</h1>
+    <p>Điều khiển trục DM3E-556. Nhập mật khẩu để tiếp tục.</p>
+    <form id="f">
+      <input id="pw" type="password" autocomplete="current-password" placeholder="Mật khẩu" autofocus required>
+      <button class="primary" type="submit">Đăng nhập</button>
+      <div class="err" id="err"></div>
+    </form>
+  </section>
+</div>
+<script>
+document.getElementById('f').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const err = document.getElementById('err');
+  const btn = e.target.querySelector('button');
+  err.textContent = '';
+  btn.disabled = true;
+  try {
+    const r = await fetch('/api/login', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({password: document.getElementById('pw').value}),
+    });
+    const j = await r.json();
+    if (j.ok) { location.href = '/'; return; }
+    err.textContent = j.error || 'Đăng nhập thất bại.';
+  } catch {
+    err.textContent = 'Không kết nối được tới Pi.';
+  }
+  btn.disabled = false;
+});
+</script>
+</body>
+</html>

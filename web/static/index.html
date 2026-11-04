@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>EtherCAT Pi</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<header>
+  <h1>EtherCAT Pi · DM3E-556</h1>
+  <span class="pill" id="p-ws">Web</span>
+  <span class="pill" id="p-rt">ecat-rt</span>
+  <span class="pill" id="p-link">eth0</span>
+  <span class="spacer"></span>
+  <button class="small" id="logout">Đăng xuất</button>
+</header>
+
+<div id="banner"><span id="banner-title"></span><small id="banner-detail"></small></div>
+
+<main>
+  <section class="control" id="sec-control">
+    <h2>Điều khiển</h2>
+    <div class="role">
+      <span class="who" id="role-text">Đang kết nối…</span>
+      <button class="small primary" id="take">Nhận quyền điều khiển</button>
+      <button class="small" id="release">Nhả quyền</button>
+    </div>
+    <div class="row">
+      <button id="enable" data-ctl>Enable</button>
+      <button id="disable" data-ctl>Disable</button>
+      <button id="reset" data-ctl>Fault Reset</button>
+    </div>
+    <div class="speed">
+      <label for="speed">Tốc độ jog <output id="speed-out">— rpm</output></label>
+      <input type="range" id="speed" min="1" max="60" step="1" value="30" data-ctl>
+    </div>
+    <div class="jog">
+      <button id="jog-neg" data-ctl aria-label="Jog âm">− JOG</button>
+      <button id="jog-pos" data-ctl aria-label="Jog dương">JOG +</button>
+    </div>
+    <div class="jog-hint">Giữ nút để chạy, nhả ra để dừng.</div>
+    <div class="notes" id="notes"></div>
+  </section>
+
+  <section id="sec-axis">
+    <h2>Trục 1</h2>
+    <div class="big-state" id="ax-state">—</div>
+    <div class="bits" id="ax-bits"></div>
+    <dl class="kv">
+      <dt>Statusword</dt><dd class="mono" id="ax-sw">—</dd>
+      <dt>Controlword</dt><dd class="mono" id="ax-cw">—</dd>
+      <dt>Chế độ</dt><dd id="ax-mode">—</dd>
+      <dt>Vị trí thực tế</dt><dd id="ax-pos">—</dd>
+      <dt>Vận tốc thực tế</dt><dd id="ax-vel">—</dd>
+      <dt>Vận tốc lệnh</dt><dd id="ax-prof">—</dd>
+      <dt>Mã lỗi 603F</dt><dd class="mono" id="ax-err">—</dd>
+    </dl>
+    <div class="error-box" id="ax-errbox"></div>
+  </section>
+
+  <section id="sec-master">
+    <h2>Master</h2>
+    <div class="big-state" id="ms-state">—</div>
+    <dl class="kv">
+      <dt>Chu kỳ đặt</dt><dd id="ms-cycle">—</dd>
+      <dt>Chu kỳ thực tế (TB)</dt><dd id="ms-avg">—</dd>
+      <dt>Min / max (1 s)</dt><dd id="ms-minmax">—</dd>
+      <dt>Jitter đánh thức (1 s)</dt><dd id="ms-lat">—</dd>
+      <dt>Jitter xấu nhất</dt><dd id="ms-lat-total">—</dd>
+      <dt>Sai lệch DC</dt><dd id="ms-dc">—</dd>
+      <dt>WKC</dt><dd id="ms-wkc">—</dd>
+      <dt>Lỗi WKC</dt><dd id="ms-wkc-err">—</dd>
+      <dt>Liên kết</dt><dd id="ms-link">—</dd>
+    </dl>
+  </section>
+
+  <section id="sec-slaves">
+    <h2>Slave</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Tên</th><th>Vendor / Product</th><th>Trạng thái</th></tr></thead>
+        <tbody id="slaves"><tr><td colspan="4">—</td></tr></tbody>
+      </table>
+    </div>
+    <dl class="kv" style="margin-top:12px">
+      <dt>Giới hạn tốc độ</dt><dd id="lim-v">—</dd>
+      <dt>Gia tốc / dừng</dt><dd id="lim-a">—</dd>
+      <dt>Heartbeat</dt><dd id="lim-hb">—</dd>
+    </dl>
+  </section>
+</main>
+
+<div id="stop"><button id="stop-btn">STOP</button></div>
+<div id="toast"></div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

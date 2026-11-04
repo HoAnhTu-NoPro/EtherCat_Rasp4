@@ -34,6 +34,16 @@ có web UI cổng 8080. Xem README.md cho build/chạy.
   Dòng đỉnh chỉ ghi RAM, không lưu EEPROM (EEPROM hiện là 4000 mA).
 - `ecat-rt` thread RT chỉ dùng syscall non-blocking (recv MSG_DONTWAIT); thread
   chính (200 ms) làm ecx_readstate/khôi phục slave và ghi khối bus vào shm.
+- Web: FastAPI + uvicorn trong `web/.venv` (phiên bản ghim trong requirements.txt),
+  JS thuần không CDN. Đăng nhập mật khẩu chung, hash scrypt trong `config/web.ini`
+  (gitignore, 600). Một controller tại một thời điểm; STOP cho mọi client.
+  Controller mất WS -> server gửi STOP. Server không tự sinh heartbeat jog:
+  chỉ chuyển tiếp lệnh trình duyệt gửi, nên web treo = trục dừng.
+- Nhả nút jog: trình duyệt gửi JOG 0; RT coi hết hạn khi target 0 là kết thúc
+  bình thường (giảm tốc theo accel, không bật FL_HB_EXPIRED).
+- Layout IPC: `ipc-layout-check` (C) so với `server/ipc.py`; đổi layout phải tăng IPC_VERSION.
+- Chưa tạo dịch vụ systemd (người dùng sẽ quyết định sau).
+- Tailscale chưa thấy trên host (không có lệnh `tailscale`, không có tailscale0) lúc 2026-11-04.
 - Không chạy `ecat-scan` hay tool SOEM khác khi `ecat-rt` đang chạy: chúng
   đưa slave về INIT (đã xảy ra một lần khi test, trục vào Fault 0xA001,
   không tự enable lại, đúng thiết kế).

@@ -239,10 +239,15 @@ static void *rt_thread(void *arg)
       /* ---- Heartbeat ---- */
       if (jog_deadline && t > jog_deadline)
       {
+         /* Lệnh cuối là JOG 0 (nhả nút): kết thúc bình thường, giảm tốc theo accel.
+          * Còn lại: mất heartbeat, giảm tốc dừng. */
+         if (jog_target != 0)
+         {
+            hard_stop = true;
+            hb_expired = true;
+         }
          jog_target = 0;
          jog_deadline = 0;
-         hard_stop = true;
-         hb_expired = true;
       }
 
       /* ---- Profile + CiA 402 ---- */

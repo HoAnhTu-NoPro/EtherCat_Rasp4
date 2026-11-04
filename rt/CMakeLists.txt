@@ -22,3 +22,6 @@ target_link_libraries(ecat-rt soem pthread m rt)
 add_executable(ecat-ctl tools/ecat-ctl.c)
 target_include_directories(ecat-ctl PRIVATE ${SHARED_DIR})
 target_link_libraries(ecat-ctl rt)
+
+add_executable(ipc-layout-check tools/ipc-layout-check.c)
+target_include_directories(ipc-layout-check PRIVATE ${SHARED_DIR})

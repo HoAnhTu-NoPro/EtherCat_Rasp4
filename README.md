@@ -16,7 +16,7 @@ Raspberry Pi 4 làm EtherCAT master (SOEM) điều khiển driver bước Leadsh
 | 1 | Khung repo, SOEM, `ecat-scan` (quét bus, đọc SDO) | ✅ |
 | 2 | Vòng lặp 1 ms (DC Sync0), đo chu kỳ/jitter, đưa slave lên OP | ✅ |
 | 3 | Máy trạng thái CiA 402, profile CSP, heartbeat, IPC, `ecat-ctl` | ✅ |
-| 4 | IPC + web server + giao diện | ⏳ |
+| 4 | Web server (đăng nhập, một người điều khiển) + giao diện | ✅ |
 
 ## Phần cứng
 
@@ -91,6 +91,45 @@ sudo ./build/ecat-rt -c config/axis.ini      # Ctrl+C để dừng (motor bị c
 | Tốc độ jog vượt `max_jog_rpm` | Bị kẹp |
 | `ecat-rt` thoát (Ctrl+C/SIGTERM) | Gửi controlword 0, đưa slave về INIT |
 | Driver mất nguồn rồi có lại | Cấu hình lại (dòng đỉnh, CSP, Sync0), trục vẫn disable |
+| `ecat-rt` bị kill -9 / treo | Driver tự Fault 0x821B (watchdog SM2) sau ~100 ms và cắt enable — dừng gấp, không ramp. Đã test ở 30 rpm |
+| Nhả nút jog | Gửi JOG 0: giảm tốc theo `accel_rpm_s` (không tính là mất heartbeat) |
+
+## Web (cổng 8080)
+
+Cài một lần (không cần gói hệ thống, chỉ pip trong venv):
+
+```sh
+python3 -m venv web/.venv
+web/.venv/bin/pip install -r web/requirements.txt
+web/.venv/bin/python web/set-password.py   # tạo config/web.ini (quyền 600, không commit)
+```
+
+Chạy (không cần root; user phải thuộc nhóm `[ipc] group` trong `axis.ini`):
+
+```sh
+sudo scripts/setup-net.sh
+sudo ./build/ecat-rt -q &
+web/run.sh
+```
+
+Mở `http://<ip-pi>:8080` (WiFi) hoặc `http://<ip-tailscale>:8080`.
+
+- **Đăng nhập** bằng mật khẩu chung; session cookie 12 giờ; sai 5 lần trong 5 phút thì khóa IP đó 5 phút.
+  Kết nối là HTTP thường: qua Tailscale thì đã được mã hóa, qua WiFi LAN thì mật khẩu đi dạng rõ.
+- **Một người điều khiển**: bấm "Nhận quyền điều khiển". Người khác chỉ xem; có thể "Lấy quyền"
+  (trục bị STOP khi chuyển quyền). Người điều khiển mất kết nối thì trục STOP và quyền được nhả.
+- **STOP** (thanh đỏ dưới cùng, hoặc phím Esc) bấm được từ mọi client đã đăng nhập, kể cả người chỉ xem.
+- **Jog** giữ để chạy: trình duyệt gửi lệnh mỗi 50 ms khi đang giữ, nhả nút gửi vận tốc 0. Rời tab,
+  mất focus hoặc mất WebSocket đều dừng gửi, nên `ecat-rt` tự dừng sau 200 ms.
+- Banner đỏ khi mất kết nối web server, mất `ecat-rt` (tiến trình chết hoặc không cập nhật > 0,5 s)
+  hoặc mất bus EtherCAT.
+
+Web server chỉ chuyển tiếp lệnh; mọi giới hạn an toàn nằm trong `ecat-rt`.
+Kiểm tra layout IPC C/Python sau khi sửa `shared/ipc_layout.h`:
+
+```sh
+cd web && .venv/bin/python -m server.ipc --check
+```
 
 ## Cấu hình
 
@@ -113,8 +152,10 @@ Xem `shared/ipc_layout.h`.
 config/        cấu hình trục và giới hạn
 DM3E/          manual driver
 rt/src/        ecat-rt: bus, cia402, profile, ipc, config
-rt/tools/      ecat-scan, ecat-ctl
+rt/tools/      ecat-scan, ecat-ctl, ipc-layout-check
 shared/        ipc_layout.h (dùng chung C và Python)
+web/server/    FastAPI: app, auth, ipc (đọc shm/gửi lệnh), dm3e (giải mã lỗi/statusword)
+web/static/    giao diện một trang (HTML/CSS/JS thuần, không CDN)
 scripts/       script chuẩn bị mạng, ghi chú tinh chỉnh RT
 third_party/   SOEM (submodule, ghim v2.0.1)
 ```

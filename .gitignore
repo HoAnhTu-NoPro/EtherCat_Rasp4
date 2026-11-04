@@ -2,3 +2,4 @@
 __pycache__/
 *.pyc
 /web/.venv/
+/config/web.ini

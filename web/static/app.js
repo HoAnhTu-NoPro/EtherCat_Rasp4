@@ -18,6 +18,8 @@ let role = {controller: false};
 let jogTimer = null;
 let jogDir = 0;
 let jogBtn = null;
+let gotoTimer = null;
+let gotoStartedAt = 0;
 
 // ------------------------------------------------------------ WebSocket
 
@@ -35,6 +37,7 @@ function connect() {
   ws.onclose = (ev) => {
     wsOpen = false;
     endJog();
+    endGoto();
     status = null;
     role = {controller: false};
     render();
@@ -58,13 +61,48 @@ function wsHealthy() { return wsOpen && Date.now() - lastMsgAt <= WS_STALE_MS; }
 
 // ------------------------------------------------------------ Jog giữ để chạy
 
+// ------------------------------------------------------------ Về 0
+// Bấm một lần; trong lúc chạy trình duyệt tự gửi lại lệnh mỗi 50 ms làm heartbeat.
+// Mất WebSocket, rời tab hay STOP đều ngừng gửi -> ecat-rt tự dừng sau 200 ms.
+
+function canGoto() {
+  return canJog() && !jogTimer && Math.abs(status.axis.profile_rpm) < 0.01;
+}
+
+function startGoto() {
+  if (gotoTimer || !canGoto()) return;
+  gotoStartedAt = Date.now();
+  sendGoto();
+  gotoTimer = setInterval(sendGoto, JOG_PERIOD_MS);
+  render();
+}
+
+function sendGoto() {
+  const a = status && status.axis;
+  // Chờ ecat-rt xác nhận đang chạy (tối đa 300 ms), sau đó hết "moving" là xong hoặc bị dừng.
+  if (!wsHealthy() || !role.controller || (Date.now() - gotoStartedAt > 300 && !(a && a.moving))) {
+    endGoto();
+    return;
+  }
+  send({t: 'goto_zero', v: speedValue()});
+}
+
+function endGoto() {
+  if (!gotoTimer) return;
+  clearInterval(gotoTimer);
+  gotoTimer = null;
+  render();
+}
+
+$('goto-zero').addEventListener('click', () => { if (gotoTimer) stop(); else startGoto(); });
+
 function canJog() {
   return canControl() && status.axis && status.axis.state_id === AX_ENABLED &&
          status.axis.enable_req && !status.axis.stop_latched;
 }
 
 function startJog(dir, btn) {
-  if (!canJog() || jogTimer) return;
+  if (!canJog() || jogTimer || gotoTimer) return;
   jogDir = dir;
   jogBtn = btn;
   btn.classList.add('held');
@@ -99,12 +137,13 @@ function bindJog(btn, dir) {
 bindJog($('jog-neg'), -1);
 bindJog($('jog-pos'), +1);
 window.addEventListener('blur', endJog);
-document.addEventListener('visibilitychange', () => { if (document.hidden) endJog(); });
+document.addEventListener('visibilitychange', () => { if (document.hidden) { endJog(); endGoto(); } });
 
 // ------------------------------------------------------------ Nút
 
 function stop() {
   endJog();
+  endGoto();
   if (!send({t: 'stop'})) toast('Mất kết nối, STOP không gửi được! Dùng nút dừng khẩn cấp phần cứng.');
 }
 
@@ -114,7 +153,7 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') stop(); })
 $('enable').addEventListener('click', () => send({t: 'enable'}));
 $('disable').addEventListener('click', () => send({t: 'disable'}));
 $('reset').addEventListener('click', () => send({t: 'reset'}));
-$('release').addEventListener('click', () => { endJog(); send({t: 'release'}); });
+$('release').addEventListener('click', () => { endJog(); endGoto(); send({t: 'release'}); });
 $('take').addEventListener('click', () => {
   if (role.controller_label && !role.controller) {
     if (!confirm(`${role.controller_label} đang điều khiển. Lấy quyền? Trục sẽ được STOP.`)) return;
@@ -191,7 +230,12 @@ function render() {
   $('enable').disabled = !ctl || fault || (a && a.enable_req);
   $('disable').disabled = !ctl || !(a && (a.enable_req || enabled));
   $('reset').disabled = !ctl || !fault;
-  $('jog-neg').disabled = $('jog-pos').disabled = !canJog() && !jogTimer;
+  $('jog-neg').disabled = $('jog-pos').disabled = (!canJog() || gotoTimer !== null) && !jogTimer;
+  const gz = $('goto-zero');
+  const moving = gotoTimer !== null || (a && a.moving);
+  gz.disabled = !moving && !canGoto();
+  gz.classList.toggle('active', moving);
+  gz.textContent = moving ? `Đang về 0… (bấm để dừng)` : 'Về vị trí 0';
   speed.disabled = !ctl;
   $('stop-btn').disabled = false; // luôn bấm được; nếu mất kết nối sẽ báo
 
@@ -207,6 +251,7 @@ function render() {
   if (a && a.hb_expired) notes.push('Lần jog trước dừng do mất heartbeat.');
   if (a && a.enable_timeout) notes.push('Enable thất bại (driver không vào trạng thái Enabled trong 1 s).');
   if (a && a.stopping) notes.push('Đang giảm tốc dừng…');
+  if (a && a.move_done && a.position === 0 && !a.moving) notes.push('Đã về vị trí 0.');
   if (role.controller && a && !enabled && !fault) notes.push('Bấm Enable để cấp điện motor trước khi jog.');
   if (fault) notes.push('Driver đang Fault: xử lý nguyên nhân rồi bấm Fault Reset.');
   $('notes').replaceChildren(...notes.map((t) => { const d = document.createElement('div'); d.textContent = t; return d; }));

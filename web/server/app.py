@@ -180,6 +180,7 @@ def _status_msg() -> str:
             "enable_req": bool(flags & ipc.FL_ENABLE_REQ), "jog_active": bool(flags & ipc.FL_JOG_ACTIVE),
             "hb_expired": bool(flags & ipc.FL_HB_EXPIRED), "enable_timeout": bool(flags & ipc.FL_ENABLE_TIMEOUT),
             "stopping": bool(flags & ipc.FL_STOPPING), "stop_latched": bool(flags & ipc.FL_STOP_LATCHED),
+            "moving": bool(flags & ipc.FL_MOVING), "move_done": bool(flags & ipc.FL_MOVE_DONE),
         }
         out["limits"] = {
             "max_jog_rpm": rt["max_jog_rpm"], "accel_rpm_s": rt["accel_rpm_s"],
@@ -238,17 +239,18 @@ def _handle(c: Client, m: dict):
         return
 
     if controller is not c:
-        if t != "jog":
+        if t not in ("jog", "goto_zero"):
             _notice(c, "Bạn đang ở chế độ chỉ xem.", "warn")
         return
 
-    if t == "jog":
+    if t in ("jog", "goto_zero"):
         try:
             v = float(m.get("v", 0))
         except (TypeError, ValueError):
             return
         if math.isfinite(v):
-            _send(ipc.CMD_JOG, v)  # ecat-rt tự kẹp theo max_jog_rpm
+            # ecat-rt tự kẹp theo max_jog_rpm; goto_zero được gửi lại làm heartbeat
+            _send(ipc.CMD_JOG if t == "jog" else ipc.CMD_GOTO_ZERO, v)
         return
 
     cmd = {"enable": ipc.CMD_ENABLE, "disable": ipc.CMD_DISABLE, "reset": ipc.CMD_FAULT_RESET}.get(t)

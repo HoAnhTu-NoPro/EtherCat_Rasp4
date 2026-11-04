@@ -201,6 +201,8 @@ input[type=range] { width: 100%; height: 32px; accent-color: var(--accent); }
   touch-action: none;
 }
 .jog button.held { background: var(--accent); border-color: var(--accent); color: #fff; }
+.row.goto { margin: 14px 0 0; }
+.row.goto button.active { background: var(--accent); border-color: var(--accent); color: #fff; }
 .jog-hint { margin-top: 8px; font-size: 13px; color: var(--muted); text-align: center; }
 
 #stop {

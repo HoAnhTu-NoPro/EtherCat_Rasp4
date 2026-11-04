@@ -41,6 +41,12 @@ có web UI cổng 8080. Xem README.md cho build/chạy.
   chỉ chuyển tiếp lệnh trình duyệt gửi, nên web treo = trục dừng.
 - Nhả nút jog: trình duyệt gửi JOG 0; RT coi hết hạn khi target 0 là kết thúc
   bình thường (giảm tốc theo accel, không bật FL_HB_EXPIRED).
+- Về 0 (CMD_GOTO_ZERO): profile_step_to giải |d| - (u0+u)dt/2 >= u²/2a mỗi chu kỳ
+  (tích phân hình thang) nên không vượt đích; đã mô phỏng trước khi viết C. Chỉ nhận
+  khi profile đứng yên. Lệnh lặp lại = heartbeat, cùng timeout với jog.
+- Người dùng đã yêu cầu gỡ panel PDO trên web và tool ecat-sniff (revert cfd2c5e).
+- Khối shm phải căn lề 4 byte (_Static_assert): seq dùng atomic, lệch căn lề gây SIGBUS trên ARM64.
+- Không dùng `pkill -f <mẫu>` trong lệnh Bash: mẫu khớp chính shell; dùng `pkill -x` hoặc `[u]vicorn`.
 - Layout IPC: `ipc-layout-check` (C) so với `server/ipc.py`; đổi layout phải tăng IPC_VERSION.
 - Chưa tạo dịch vụ systemd (người dùng sẽ quyết định sau).
 - Tailscale chưa thấy trên host (không có lệnh `tailscale`, không có tailscale0) lúc 2026-11-04.

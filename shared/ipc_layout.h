@@ -28,6 +28,8 @@ enum ipc_cmd_type
    CMD_FAULT_RESET = 3,
    CMD_STOP = 4,      /* dừng và chốt: JOG bị bỏ qua đến khi nhả nút (ngừng gửi > heartbeat) */
    CMD_JOG = 5, /* velocity_rpm có dấu; phải gửi lại trước khi hết heartbeat_timeout_ms */
+   CMD_GOTO_ZERO = 6, /* chạy về 6064 = 0 với tốc độ |velocity_rpm|; chỉ bắt đầu khi trục đứng yên.
+                         Gửi lại trong heartbeat_timeout_ms để giữ lệnh, ngừng gửi thì trục dừng. */
 };
 
 typedef struct __attribute__((packed))
@@ -66,7 +68,9 @@ enum ipc_master_state
 #define FL_HB_EXPIRED (1u << 2)    /* lần jog gần nhất kết thúc do mất heartbeat */
 #define FL_ENABLE_TIMEOUT (1u << 3) /* enable không thành công trong 1 s */
 #define FL_STOPPING (1u << 4)      /* đang giảm tốc dừng (STOP/heartbeat/disable) */
-#define FL_STOP_LATCHED (1u << 5)  /* sau STOP: bỏ qua JOG đến khi client ngừng gửi jog > heartbeat */
+#define FL_STOP_LATCHED (1u << 5)  /* sau STOP: bỏ qua JOG/GOTO đến khi client ngừng gửi > heartbeat */
+#define FL_MOVING (1u << 6)        /* đang chạy về 0 */
+#define FL_MOVE_DONE (1u << 7)     /* lần chạy về 0 gần nhất đã tới đích */
 
 /* Khối do thread RT ghi, cập nhật mỗi 10 ms. */
 typedef struct __attribute__((packed))
@@ -127,5 +131,9 @@ typedef struct __attribute__((packed))
    ipc_rt_block_t rt;
    ipc_bus_block_t bus;
 } ipc_shm_t;
+
+/* seq dùng lệnh atomic: địa chỉ lệch căn lề gây SIGBUS trên ARM64. */
+_Static_assert(sizeof(ipc_rt_block_t) % 4 == 0, "ipc_rt_block_t phải là bội số của 4 byte");
+_Static_assert(sizeof(ipc_bus_block_t) % 4 == 0, "ipc_bus_block_t phải là bội số của 4 byte");
 
 #endif

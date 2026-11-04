@@ -111,7 +111,10 @@ static void *rt_thread(void *arg)
    bool hard_stop = false;
    bool hb_expired = false;
    bool stop_latched = false;
-   int64_t last_jog_rx = 0;
+   int64_t last_jog_rx = 0;    /* lệnh chuyển động (JOG/GOTO) gần nhất, để nhả chốt STOP */
+   bool goto_active = false, goto_done = false;
+   double goto_speed = 0;      /* xung/s */
+   int64_t goto_deadline = 0;
    bool bus_ok = false;
    int wkc_bad = 0, wkc_good = 0;
    int32_t prev_pos = 0;
@@ -197,6 +200,7 @@ static void *rt_thread(void *arg)
             if (bus_ok && ax != AX_FAULT && ax != AX_FAULT_REACTION_ACTIVE)
             {
                cia402_request_enable(&drv);
+               goto_active = false;
                jog_target = 0;
                jog_deadline = 0;
                hard_stop = false;
@@ -205,11 +209,13 @@ static void *rt_thread(void *arg)
             break;
          case CMD_DISABLE:
             cia402_request_disable(&drv);
+            goto_active = false;
             jog_target = 0;
             jog_deadline = 0;
             break;
          case CMD_FAULT_RESET:
             cia402_request_fault_reset(&drv, reset_pulse_cycles);
+            goto_active = false;
             jog_target = 0;
             jog_deadline = 0;
             break;
@@ -218,15 +224,34 @@ static void *rt_thread(void *arg)
             jog_deadline = 0;
             hard_stop = true;
             stop_latched = true;
+            goto_active = false;
+            break;
+         case CMD_GOTO_ZERO:
+            last_jog_rx = t;
+            if (goto_active)
+            {
+               goto_deadline = t + hb_timeout; /* heartbeat */
+            }
+            else if (!stop_latched && enabled && drv.enable_req && profile_stopped(&prof) &&
+                     jog_deadline == 0 && isfinite(cmd.velocity_rpm) && cmd.velocity_rpm != 0)
+            {
+               goto_active = true;
+               goto_done = false;
+               goto_speed = fmin(fabs(cmd.velocity_rpm) * rpm_to_pps, prof.vmax);
+               goto_deadline = t + hb_timeout;
+               hard_stop = false;
+               hb_expired = false;
+            }
             break;
          case CMD_JOG:
             last_jog_rx = t;
-            if (!stop_latched && enabled && drv.enable_req && isfinite(cmd.velocity_rpm))
+            if (!goto_active && !stop_latched && enabled && drv.enable_req && isfinite(cmd.velocity_rpm))
             {
                jog_target = cmd.velocity_rpm * rpm_to_pps; /* profile_step tự kẹp ±vmax */
                jog_deadline = t + hb_timeout;
                hard_stop = false;
                hb_expired = false;
+               goto_done = false;
             }
             break;
          }
@@ -250,10 +275,25 @@ static void *rt_thread(void *arg)
          jog_deadline = 0;
       }
 
+      if (goto_active && t > goto_deadline)
+      {
+         goto_active = false;
+         hard_stop = true;
+         hb_expired = true;
+      }
+
       /* ---- Profile + CiA 402 ---- */
       if (enabled)
       {
-         if (drv.enable_req)
+         if (drv.enable_req && goto_active)
+         {
+            if (profile_step_to(&prof, 0, goto_speed))
+            {
+               goto_active = false;
+               goto_done = true;
+            }
+         }
+         else if (drv.enable_req)
             profile_step(&prof, jog_target, hard_stop);
          else
             profile_step(&prof, 0, true); /* disable: dừng trước rồi mới cắt */
@@ -266,6 +306,7 @@ static void *rt_thread(void *arg)
          jog_target = 0;
          jog_deadline = 0;
          hard_stop = false;
+         goto_active = false;
       }
 
       uint16_t cw = bus_ok ? cia402_step(&drv, sw, profile_stopped(&prof), enable_timeout_cycles)
@@ -310,12 +351,15 @@ static void *rt_thread(void *arg)
          st.target_position = bus.out->target_position;
          st.actual_rpm = (float)(vel_filt / rpm_to_pps);
          st.profile_rpm = (float)(prof.vel / rpm_to_pps);
-         st.target_rpm = (float)(fmax(-prof.vmax, fmin(prof.vmax, jog_target)) / rpm_to_pps);
-         st.hb_age_ms = jog_deadline ? (uint32_t)((t - (jog_deadline - hb_timeout)) / 1000000) : 0;
+         st.target_rpm = goto_active ? (float)(goto_speed / rpm_to_pps)
+                                     : (float)(fmax(-prof.vmax, fmin(prof.vmax, jog_target)) / rpm_to_pps);
+         int64_t dl = goto_active ? goto_deadline : jog_deadline;
+         st.hb_age_ms = dl ? (uint32_t)((t - (dl - hb_timeout)) / 1000000) : 0;
          st.flags = (drv.enable_req ? FL_ENABLE_REQ : 0) | (jog_deadline ? FL_JOG_ACTIVE : 0) |
                     (hb_expired ? FL_HB_EXPIRED : 0) | (drv.enable_timeout ? FL_ENABLE_TIMEOUT : 0) |
                     (hard_stop || (enabled && !drv.enable_req) ? FL_STOPPING : 0) |
-                    (stop_latched ? FL_STOP_LATCHED : 0);
+                    (stop_latched ? FL_STOP_LATCHED : 0) | (goto_active ? FL_MOVING : 0) |
+                    (goto_done ? FL_MOVE_DONE : 0);
          ipc_publish(&ipc.shm->rt, &st, sizeof(st));
       }
    }

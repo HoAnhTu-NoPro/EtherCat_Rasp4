@@ -27,6 +27,11 @@ void profile_sync(profile_t *p, int32_t actual);
  * hard_stop: dùng gia tốc dừng (STOP, mất heartbeat, disable). */
 void profile_step(profile_t *p, double v_target, bool hard_stop);
 
+/* Một chu kỳ chạy tới vị trí target (hình thang, gia tốc accel, tốc độ tối đa
+ * min(vmax_move, vmax)), không vượt quá đích nếu bắt đầu từ trạng thái đứng yên.
+ * Trả về true khi đã tới đích và dừng hẳn. */
+bool profile_step_to(profile_t *p, int64_t target, double vmax_move);
+
 static inline int32_t profile_position(const profile_t *p)
 {
    return (int32_t)(uint32_t)p->pos; /* quấn vòng như 607A 32 bit */

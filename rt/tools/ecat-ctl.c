@@ -3,6 +3,9 @@
  *
  *   ecat-ctl status | watch
  *   ecat-ctl enable | disable | reset | stop
+ *   ecat-ctl zero <rpm> [giây_ngừng]
+ *       chạy về vị trí 0, gửi heartbeat mỗi 50 ms đến khi tới nơi.
+ *       giây_ngừng: ngừng gửi heartbeat sau ngần ấy giây -> test mất kết nối.
  *   ecat-ctl jog <rpm> <giây> [nohb]
  *       gửi JOG mỗi 50 ms trong <giây>, rồi STOP.
  *       nohb: hết thời gian thì ngừng gửi, KHÔNG gửi STOP -> test heartbeat.
@@ -95,7 +98,7 @@ int main(int argc, char **argv)
 {
    if (argc < 2)
    {
-      fprintf(stderr, "dùng: %s status|watch|enable|disable|reset|stop|jog <rpm> <giây> [nohb]\n", argv[0]);
+      fprintf(stderr, "dùng: %s status|watch|enable|disable|reset|stop|jog <rpm> <giây> [nohb]|zero <rpm> [giây_ngừng]\n", argv[0]);
       return 2;
    }
    if (open_shm())
@@ -124,6 +127,36 @@ int main(int argc, char **argv)
    else if (!strcmp(c, "disable")) r = send_cmd(CMD_DISABLE, 0);
    else if (!strcmp(c, "reset"))   r = send_cmd(CMD_FAULT_RESET, 0);
    else if (!strcmp(c, "stop"))    r = send_cmd(CMD_STOP, 0);
+   else if (!strcmp(c, "zero") && argc >= 3)
+   {
+      float rpm = strtof(argv[2], NULL);
+      double cut = argc >= 4 ? strtod(argv[3], NULL) : 0;
+      ipc_rt_block_t rb;
+      for (int i = 0;; i++)
+      {
+         if (cut > 0 && i * 0.05 >= cut)
+         {
+            printf("-- ngừng gửi heartbeat (test mất kết nối) --\n");
+            break;
+         }
+         if (send_cmd(CMD_GOTO_ZERO, rpm))
+            return 1;
+         usleep(50000);
+         read_block(&shm->rt, &rb, sizeof(rb));
+         if (i % 10 == 0)
+            print_status();
+         if (i >= 4 && !(rb.flags & FL_MOVING))
+            break;
+      }
+      for (int i = 0; i < 6; i++)
+      {
+         print_status();
+         usleep(100000);
+      }
+      read_block(&shm->rt, &rb, sizeof(rb));
+      printf("%s\n", rb.flags & FL_MOVE_DONE ? "Đã về 0." : "Không về tới 0 (bị dừng, chưa enable, hoặc trục đang chạy).");
+      return 0;
+   }
    else if (!strcmp(c, "jog") && argc >= 4)
    {
       float rpm = strtof(argv[2], NULL);

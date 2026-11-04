@@ -73,6 +73,8 @@ sudo ./build/ecat-rt -c config/axis.ini      # Ctrl+C để dừng (motor bị c
 ./build/ecat-ctl enable            # disable | reset (fault reset) | stop
 ./build/ecat-ctl jog 30 2          # 30 rpm trong 2 s rồi STOP
 ./build/ecat-ctl jog -60 1 nohb    # ngừng gửi mà không STOP -> test heartbeat
+./build/ecat-ctl zero 60           # chạy về vị trí 0 ở 60 rpm
+./build/ecat-ctl zero 60 1         # ngừng heartbeat sau 1 s -> test mất kết nối
 ```
 
 `ecat-scan` từ chối chạy khi `ecat-rt` đang chạy (quét bus sẽ đưa slave về INIT).
@@ -92,6 +94,7 @@ sudo ./build/ecat-rt -c config/axis.ini      # Ctrl+C để dừng (motor bị c
 | `ecat-rt` thoát (Ctrl+C/SIGTERM) | Gửi controlword 0, đưa slave về INIT |
 | Driver mất nguồn rồi có lại | Cấu hình lại (dòng đỉnh, CSP, Sync0), trục vẫn disable |
 | `ecat-rt` bị kill -9 / treo | Driver tự Fault 0x821B (watchdog SM2) sau ~100 ms và cắt enable — dừng gấp, không ramp. Đã test ở 30 rpm |
+| Về vị trí 0 | Chỉ bắt đầu khi trục đứng yên; profile hình thang tới đúng 6064 = 0 không vượt đích. Client phải gửi lại lệnh trong heartbeat, ngừng gửi thì giảm tốc dừng. STOP/Disable hủy lệnh; jog bị bỏ qua khi đang về 0 |
 | Nhả nút jog | Gửi JOG 0: giảm tốc theo `accel_rpm_s` (không tính là mất heartbeat) |
 
 ## Web (cổng 8080)
@@ -118,6 +121,8 @@ Mở `http://<ip-pi>:8080` (WiFi) hoặc `http://<ip-tailscale>:8080`.
   Kết nối là HTTP thường: qua Tailscale thì đã được mã hóa, qua WiFi LAN thì mật khẩu đi dạng rõ.
 - **Một người điều khiển**: bấm "Nhận quyền điều khiển". Người khác chỉ xem; có thể "Lấy quyền"
   (trục bị STOP khi chuyển quyền). Người điều khiển mất kết nối thì trục STOP và quyền được nhả.
+- **Về vị trí 0**: bấm một lần, tốc độ theo thanh trượt jog. Trong lúc chạy trình duyệt tự gửi
+  heartbeat; bấm lại nút hoặc STOP để dừng. Vị trí 0 là vị trí lúc driver được cấp nguồn.
 - **STOP** (thanh đỏ dưới cùng, hoặc phím Esc) bấm được từ mọi client đã đăng nhập, kể cả người chỉ xem.
 - **Jog** giữ để chạy: trình duyệt gửi lệnh mỗi 50 ms khi đang giữ, nhả nút gửi vận tốc 0. Rời tab,
   mất focus hoặc mất WebSocket đều dừng gửi, nên `ecat-rt` tự dừng sau 200 ms.

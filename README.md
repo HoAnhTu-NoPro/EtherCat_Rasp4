@@ -14,7 +14,7 @@ Raspberry Pi 4 làm EtherCAT master (SOEM) điều khiển driver bước Leadsh
 | Bước | Nội dung | Trạng thái |
 |---|---|---|
 | 1 | Khung repo, SOEM, `ecat-scan` (quét bus, đọc SDO) | ✅ |
-| 2 | Vòng lặp 1 ms, đo chu kỳ/jitter, đưa slave lên OP | ⏳ |
+| 2 | Vòng lặp 1 ms (DC Sync0), đo chu kỳ/jitter, đưa slave lên OP | ✅ |
 | 3 | Máy trạng thái CiA 402, profile CSP, heartbeat | ⏳ |
 | 4 | IPC + web server + giao diện | ⏳ |
 
@@ -55,6 +55,18 @@ Quét bus và đọc thông tin slave (chỉ lên PRE-OP, không enable trục):
 ```sh
 sudo ./build/ecat-scan eth0
 ```
+
+Chạy vòng lặp RT (bước 2: lên OP, đo jitter, trục luôn disable):
+
+```sh
+sudo ./build/ecat-rt -c config/axis.ini -t 60   # -t 0 = chạy đến Ctrl+C
+#   -C 3   CPU cho thread RT (mặc định 3, -1 = không ghim)
+#   -p 80  ưu tiên SCHED_FIFO
+```
+
+Mỗi giây in: trạng thái EtherCAT, chu kỳ trung bình/min/max, latency đánh thức
+xấu nhất, sai lệch DC, WKC, statusword, 603F, chế độ, vị trí. Khi thoát in
+tổng kết latency.
 
 ## Cấu hình
 

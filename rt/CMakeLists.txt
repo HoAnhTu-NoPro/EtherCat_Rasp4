@@ -12,3 +12,6 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../third_party/SOEM soem EXCLUDE_FR
 
 add_executable(ecat-scan tools/ecat-scan.c)
 target_link_libraries(ecat-scan soem)
+
+add_executable(ecat-rt src/main.c src/bus.c src/config.c)
+target_link_libraries(ecat-rt soem pthread)

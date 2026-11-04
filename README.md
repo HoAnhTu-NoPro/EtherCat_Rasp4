@@ -77,6 +77,15 @@ sudo ./build/ecat-rt -c config/axis.ini      # Ctrl+C để dừng (motor bị c
 
 `ecat-scan` từ chối chạy khi `ecat-rt` đang chạy (quét bus sẽ đưa slave về INIT).
 
+Xem frame EtherCAT thật trên dây (chỉ đọc, không cần tcpdump, chạy được song song với `ecat-rt`):
+
+```sh
+sudo rt/tools/ecat-sniff.py                 # màn hình live: frame đi/về gần nhất, giải mã PDO, DC time
+sudo rt/tools/ecat-sniff.py --log 1 -n 6    # in 6 frame liên tiếp
+sudo rt/tools/ecat-sniff.py --log 1000      # in 1 frame mỗi giây
+sudo rt/tools/ecat-sniff.py --hex           # kèm hex dump
+```
+
 ## Hành vi an toàn (thực thi trong `ecat-rt`, không phụ thuộc web)
 
 | Tình huống | Phản ứng |
@@ -121,6 +130,8 @@ Mở `http://<ip-pi>:8080` (WiFi) hoặc `http://<ip-tailscale>:8080`.
 - **STOP** (thanh đỏ dưới cùng, hoặc phím Esc) bấm được từ mọi client đã đăng nhập, kể cả người chỉ xem.
 - **Jog** giữ để chạy: trình duyệt gửi lệnh mỗi 50 ms khi đang giữ, nhả nút gửi vận tốc 0. Rời tab,
   mất focus hoặc mất WebSocket đều dừng gửi, nên `ecat-rt` tự dừng sau 200 ms.
+- Panel **PDO**: 8 byte Pi gửi (RxPDO) và 19 byte driver trả về (TxPDO) của chu kỳ gần nhất,
+  hex + giải mã từng đối tượng, và lượng tăng 607A mỗi chu kỳ (ảnh chụp 20 lần/giây).
 - Banner đỏ khi mất kết nối web server, mất `ecat-rt` (tiến trình chết hoặc không cập nhật > 0,5 s)
   hoặc mất bus EtherCAT.
 
@@ -152,7 +163,7 @@ Xem `shared/ipc_layout.h`.
 config/        cấu hình trục và giới hạn
 DM3E/          manual driver
 rt/src/        ecat-rt: bus, cia402, profile, ipc, config
-rt/tools/      ecat-scan, ecat-ctl, ipc-layout-check
+rt/tools/      ecat-scan, ecat-ctl, ecat-sniff.py, ipc-layout-check
 shared/        ipc_layout.h (dùng chung C và Python)
 web/server/    FastAPI: app, auth, ipc (đọc shm/gửi lệnh), dm3e (giải mã lỗi/statusword)
 web/static/    giao diện một trang (HTML/CSS/JS thuần, không CDN)

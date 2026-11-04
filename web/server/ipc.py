@@ -10,7 +10,7 @@ import socket
 import struct
 import time
 
-IPC_VERSION = 1
+IPC_VERSION = 2
 IPC_MAGIC = 0x45434154
 CMD_SOCKET = "/run/ecat-rt/cmd.sock"
 SHM_PATH = "/dev/shm/ecat-rt-status"
@@ -28,13 +28,14 @@ FL_STOP_LATCHED = 1 << 5
 MASTER_STATES = ["STARTING", "RUNNING", "BUS_LOST", "STOPPED"]
 
 HDR = struct.Struct("<IIII")
-RT = struct.Struct("<IIqQQQfffffffiiIIHHHhiifffIfffI")
+RT = struct.Struct("<IIqQQQfffffffiiIIHHHhiifffIfffIi8s19s5x")
 RT_FIELDS = (
     "seq master_state updated_ns cycles wkc_errors lat_over_100us cycle_us "
     "period_avg_us period_min_us period_max_us lat_max_us lat_max_total_us dc_error_us "
     "wkc expected_wkc axis_state flags statusword controlword error_code mode_display "
     "actual_position target_position actual_rpm profile_rpm target_rpm hb_age_ms "
-    "max_jog_rpm accel_rpm_s stop_decel_rpm_s heartbeat_timeout_ms"
+    "max_jog_rpm accel_rpm_s stop_decel_rpm_s heartbeat_timeout_ms "
+    "target_delta pdo_out pdo_in"
 ).split()
 SLAVE = struct.Struct("<IIIHH40s")
 BUS = struct.Struct("<IIq32s")

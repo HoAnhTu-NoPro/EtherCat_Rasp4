@@ -185,6 +185,14 @@ def _status_msg() -> str:
             "max_jog_rpm": rt["max_jog_rpm"], "accel_rpm_s": rt["accel_rpm_s"],
             "stop_decel_rpm_s": rt["stop_decel_rpm_s"], "heartbeat_timeout_ms": rt["heartbeat_timeout_ms"],
         }
+        out["pdo"] = {
+            "cycle": rt["cycles"],
+            "out_hex": rt["pdo_out"].hex(" ").upper(),
+            "in_hex": rt["pdo_in"].hex(" ").upper(),
+            "out": dm3e.decode_pdo(rt["pdo_out"], dm3e.PDO_OUT),
+            "in": dm3e.decode_pdo(rt["pdo_in"], dm3e.PDO_IN),
+            "target_delta": rt["target_delta"],
+        }
         out["slaves"] = [
             {**s, "state_text": dm3e.esc_state_text(s["state"]),
              "al_text": f"0x{s['al_status']:04X}" if s["al_status"] else ""}

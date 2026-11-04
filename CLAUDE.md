@@ -41,6 +41,11 @@ có web UI cổng 8080. Xem README.md cho build/chạy.
   chỉ chuyển tiếp lệnh trình duyệt gửi, nên web treo = trục dừng.
 - Nhả nút jog: trình duyệt gửi JOG 0; RT coi hết hạn khi target 0 là kết thúc
   bình thường (giảm tốc theo accel, không bật FL_HB_EXPIRED).
+- Khối shm phải là bội số 8 byte (có _Static_assert): seq dùng atomic, địa chỉ lệch
+  căn lề gây SIGBUS trên ARM64 (đã xảy ra khi thêm pdo_in[19]).
+- `ecat-sniff.py` dùng AF_PACKET + ETH_P_ALL: socket chỉ nghe 0x88A4 không thấy frame gửi đi.
+  Frame đi mang TxPDO cũ (SOEM gửi nguyên IOmap); 6064 trễ 607A 2 chu kỳ.
+- Không dùng `pkill -f <mẫu>` trong lệnh Bash: mẫu khớp chính shell và giết lệnh; dùng `pkill -x` hoặc `[u]vicorn`.
 - Layout IPC: `ipc-layout-check` (C) so với `server/ipc.py`; đổi layout phải tăng IPC_VERSION.
 - Chưa tạo dịch vụ systemd (người dùng sẽ quyết định sau).
 - Tailscale chưa thấy trên host (không có lệnh `tailscale`, không có tailscale0) lúc 2026-11-04.

@@ -253,9 +253,45 @@ function render() {
   });
   $('slaves').replaceChildren(...rows);
 
+  renderPdo(status.pdo);
+
   $('lim-v').textContent = `${fmt(lim.max_jog_rpm, 0)} rpm`;
   $('lim-a').textContent = `${fmt(lim.accel_rpm_s, 0)} / ${fmt(lim.stop_decel_rpm_s, 0)} rpm/s`;
   $('lim-hb').textContent = `${lim.heartbeat_timeout_ms} ms`;
+}
+
+const prevPdo = {};
+function pdoValue(f) {
+  const n = f.size * 2;
+  const hex = '0x' + (f.value >>> 0).toString(16).toUpperCase().padStart(n, '0').slice(-n);
+  if (f.index === '607A' || f.index === '6064' || f.index === '60BA') return f.value.toLocaleString('vi-VN');
+  if (f.index === '6061') return String(f.value);
+  return hex;
+}
+
+function renderPdo(p) {
+  if (!p) return;
+  $('pdo-cycle').textContent = p.cycle.toLocaleString('vi-VN');
+  $('pdo-delta').textContent = `${p.target_delta} xung/chu kỳ`;
+  $('pdo-out-hex').textContent = p.out_hex;
+  $('pdo-in-hex').textContent = p.in_hex;
+  for (const [dir, fields] of [['out', p.out], ['in', p.in]]) {
+    const rows = fields.map((f) => {
+      const tr = document.createElement('tr');
+      const key = dir + f.index;
+      const cells = [`${f.off}–${f.off + f.size - 1}`, `${f.index} ${f.name}`, f.hex, pdoValue(f)];
+      cells.forEach((c, i) => {
+        const td = document.createElement('td');
+        td.textContent = c;
+        if (i === 2) td.className = 'mono';
+        tr.appendChild(td);
+      });
+      if (prevPdo[key] !== undefined && prevPdo[key] !== f.hex) tr.className = 'changed';
+      prevPdo[key] = f.hex;
+      return tr;
+    });
+    $('pdo-' + dir).replaceChildren(...rows);
+  }
 }
 
 let toastTimer = null;
